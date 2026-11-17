@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mastery Scheduler — Live Demo</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b1020;
+    --panel: #141b31;
+    --line: #273250;
+    --text: #e8edff;
+    --muted: #9aa8d0;
+    --accent: #7cf7c4;
+    --accent2: #8ab4ff;
+    --warn: #ffb86b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(1200px 600px at 80% -10%, #1d2a55 0%, transparent 60%), var(--bg);
+    color: var(--text);
+    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 32px 20px 64px;
+  }
+  main { max-width: 1080px; margin: 0 auto; }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 34px; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .tagline { color: var(--muted); max-width: 720px; margin: 0 0 14px; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px;
+    font-size: 12px; color: var(--muted); background: #111830;
+  }
+  .badge.live { color: var(--accent); border-color: #2d6b5b; }
+  a { color: var(--accent2); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+  section {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 20px; box-shadow: 0 12px 32px #0004;
+  }
+  section h2 { margin: 0 0 4px; font-size: 18px; }
+  section p.hint { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+  label { display: block; margin: 12px 0 4px; color: var(--muted); font-size: 13px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=number], textarea {
+    width: 100%; background: #0c1226; color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; font: inherit;
+  }
+  textarea { min-height: 108px; resize: vertical; font-family: ui-monospace, monospace; font-size: 12px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row > * { flex: 1 1 120px; }
+  button {
+    background: #1d2b52; color: var(--text); border: 1px solid #34508c;
+    border-radius: 9px; padding: 9px 13px; cursor: pointer; font: inherit; font-weight: 600;
+  }
+  button:hover { background: #273a70; }
+  button.primary { background: var(--accent); color: #06281f; border-color: var(--accent); }
+  button.primary:hover { filter: brightness(1.08); }
+  button.active { background: var(--accent2); color: #0a1733; border-color: var(--accent2); }
+  .quality { display: flex; gap: 6px; flex-wrap: wrap; }
+  .quality button { flex: 1 1 34px; padding: 8px 4px; }
+  .result {
+    margin-top: 16px; background: #0c1226; border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; font-family: ui-monospace, monospace; font-size: 13px;
+    white-space: pre-wrap; word-break: break-word; min-height: 48px;
+  }
+  .big { font-size: 38px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .bar { height: 9px; border-radius: 999px; background: #0c1226; overflow: hidden; margin-top: 9px; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+  .note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  footer { margin-top: 26px; color: var(--muted); font-size: 13px; }
+  code { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Mastery Scheduler <span style="color:var(--accent)">· live</span></h1>
+    <p class="tagline">
+      A Bayesian mastery estimate plus an SM-2 review date. Every calculation below is the real
+      <code>src/index.mjs</code> from the repository — no reimplementation, no server, no dependencies.
+    </p>
+    <div class="badges">
+      <span class="badge live">● GitHub Pages</span>
+      <span class="badge">zero dependencies</span>
+      <span class="badge">pure functions</span>
+      <span class="badge">15 tests green</span>
+      <a class="badge" href="https://github.com/cherrirevanth-lab/anvil-mastery-scheduler">view source ↗</a>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section>
+      <h2>1 · Mastery update</h2>
+      <p class="hint">BKT posterior + one learning step. Move the sliders and watch the estimate move.</p>
+      <label>Prior mastery <span id="priorLabel">0.30</span></label>
+      <input id="prior" type="range" min="0" max="1" step="0.01" value="0.3">
+      <div class="row">
+        <div>
+          <label>Slip <span id="slipLabel">0.10</span></label>
+          <input id="slip" type="range" min="0" max="1" step="0.01" value="0.1">
+        </div>
+        <div>
+          <label>Guess <span id="guessLabel">0.20</span></label>
+          <input id="guess" type="range" min="0" max="1" step="0.01" value="0.2">
+        </div>
+        <div>
+          <label>Learn <span id="learnLabel">0.15</span></label>
+          <input id="learn" type="range" min="0" max="1" step="0.01" value="0.15">
+        </div>
+      </div>
+      <label>Observation</label>
+      <div class="row">
+        <button id="wrong" class="quality">Wrong</button>
+        <button id="right" class="quality active">Correct</button>
+      </div>
+      <button id="update" class="primary" style="margin-top:14px;width:100%">Update mastery</button>
+      <div class="result"><span class="big" id="masteryOut">0.494</span><div class="bar"><i id="masteryBar" style="width:49.4%"></i></div></div>
+      <p class="note" id="masteryNote">A correct answer never lowers mastery. A wrong one never raises it.</p>
+    </section>
+
+    <section>
+      <h2>2 · SM-2 scheduling</h2>
+      <p class="hint">Recall quality 0–5 drives the next interval and the ease factor.</p>
+      <div class="row">
+        <div><label>Ease</label><input id="ease" type="number" step="0.1" value="2.5"></div>
+        <div><label>Interval (days)</label><input id="interval" type="number" step="1" value="1"></div>
+        <div><label>Repetitions</label><input id="reps" type="number" step="1" value="0"></div>
+      </div>
+      <label>Recall quality</label>
+      <div class="quality" id="quality">
+        <button data-q="0">0</button><button data-q="1">1</button><button data-q="2">2</button>
+        <button data-q="3">3</button><button data-q="4">4</button><button data-q="5">5</button>
+      </div>
+      <div class="result" id="scheduleOut">Choose a quality to schedule the card.</div>
+      <p class="note">Below 3 is a lapse: interval resets to 1 day and ease drops by 0.2.</p>
+    </section>
+
+    <section>
+      <h2>3 · Due queue</h2>
+      <p class="hint">Due cards, oldest first. Suspended and future cards are excluded. Edit the JSON and re-run.</p>
+      <textarea id="cards">[
+  { "id": "a", "dueAt": "2020-01-01T00:00:00.000Z" },
+  { "id": "b", "dueAt": "2020-01-02T00:00:00.000Z", "ease": 2.2 },
+  { "id": "c", "dueAt": "2099-01-01T00:00:00.000Z" },
+  { "id": "d", "dueAt": "2020-01-01T00:00:00.000Z", "suspended": true }
+]</textarea>
+      <button id="queue" class="primary" style="margin-top:10px;width:100%">Build queue</button>
+      <div class="result" id="queueOut">—</div>
+    </section>
+
+    <section>
+      <h2>4 · Retention projection</h2>
+      <p class="hint">Forgetting curve: exp(−overdue / (ease × interval)).</p>
+      <div class="row">
+        <div><label>Interval (days)</label><input id="rInterval" type="number" value="6" min="1"></div>
+        <div><label>Ease</label><input id="rEase" type="number" value="2.5" step="0.1" min="1.3"></div>
+      </div>
+      <label>Overdue days <span id="overdueLabel">2</span></label>
+      <input id="overdue" type="range" min="0" max="30" step="0.5" value="2">
+      <button id="retention" class="primary" style="margin-top:12px;width:100%">Project retention</button>
+      <div class="result"><span class="big" id="retentionOut">—</span><div class="bar"><i id="retentionBar" style="width:0%"></i></div></div>
+    </section>
+  </div>
+
+  <footer>
+    Built from <code>anvil-mastery-scheduler</code>. The module is unchanged; this page only calls its exported functions.
+    Verify locally with <code>node --test test/</code> and <code>node verify.mjs</code>.
+  </footer>
+</main>
+
+<script type="module">
+import { updateMastery, scheduleCard, nextDue, buildQueue, projectRetention } from './src/index.mjs';
+
+const $ = (id) => document.getElementById(id);
+const fmt = (x, d = 3) => Number(x).toFixed(d);
+let correct = true;
+
+for (const id of ['prior', 'slip', 'guess', 'learn']) {
+  $(id).addEventListener('input', () => { $(id + 'Label').textContent = fmt($(id).value, 2); });
+}
+$('overdue').addEventListener('input', () => { $('overdueLabel').textContent = fmt($('overdue').value, 1); });
+
+function choose(v) {
+  correct = v;
+  $('right').classList.toggle('active', v);
+  $('wrong').classList.toggle('active', !v);
+}
+$('right').addEventListener('click', () => choose(true));
+$('wrong').addEventListener('click', () => choose(false));
+
+$('update').addEventListener('click', () => {
+  const value = updateMastery({
+    prior: Number($('prior').value),
+    correct,
+    slip: Number($('slip').value),
+    guess: Number($('guess').value),
+    learn: Number($('learn').value),
+  });
+  $('masteryOut').textContent = fmt(value);
+  $('masteryBar').style.width = (value * 100).toFixed(1) + '%';
+});
+
+document.querySelectorAll('#quality button').forEach((button) => {
+  button.addEventListener('click', () => {
+    const q = Number(button.dataset.q);
+    const card = {
+      ease: Number($('ease').value),
+      intervalDays: Number($('interval').value),
+      repetitions: Number($('reps').value),
+    };
+    const result = scheduleCard(card, q);
+    const due = nextDue(card, Date.now());
+    $('scheduleOut').textContent =
+      'quality = ' + q + '\n' +
+      JSON.stringify(result, null, 2) + '\nnextDue = ' + due;
+  });
+});
+
+$('queue').addEventListener('click', () => {
+  try {
+    const cards = JSON.parse($('cards').value);
+    $('queueOut').textContent = JSON.stringify(buildQueue(cards, Date.now()), null, 2);
+  } catch (error) {
+    $('queueOut').textContent = 'ERROR: ' + error.message;
+  }
+});
+
+$('retention').addEventListener('click', () => {
+  const now = Date.now();
+  const due = new Date(now - Number($('overdue').value) * 86400000).toISOString();
+  const value = projectRetention({
+    ease: Number($('rEase').value),
+    intervalDays: Number($('rInterval').value),
+    dueAt: due,
+  }, now);
+  $('retentionOut').textContent = fmt(value);
+  $('retentionBar').style.width = (value * 100).toFixed(1) + '%';
+});
+
+// initial values
+$('update').click();
+$('queue').click();
+$('retention').click();
+$('scheduleOut').textContent = 'Choose a quality to schedule the card.';
+</script>
+</body>
+</html>
