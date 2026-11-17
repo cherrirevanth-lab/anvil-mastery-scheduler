@@ -1,0 +1,16 @@
+{
+  "name": "@anvil/mastery-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bayesian mastery estimate plus an SM-2 review queue, both deterministic.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "start": "node src/cli.mjs",
+    "verify": "node verify.mjs"
+  },
+  "license": "MIT"
+}
